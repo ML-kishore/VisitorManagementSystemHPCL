@@ -1,0 +1,262 @@
+{% extends 'base.html' %}
+{% load static from staticfiles %}
+{% block title%}<title>Meeting Form</title>{% endblock %}
+{% block nav %}
+<div class="form-inline my-2 my-lg-0 ml-auto">
+  <h6 class="text-dark mx-3 my-auto">Hello, Visitor</h6>
+  <a class="btn btn-primary mx-2" href="/dashboard" role="button">Dashboard</a>
+</div>
+{% endblock %}
+
+{% block header %}
+<header class="masthead text-white text-center"
+  style="background:url('{% static '/img/bg.jpeg' %}')no-repeat center center fixed;background-size:cover; height: 38rem;">
+  <div class="overlay"></div>
+  <div class="container">
+    <div class="row mx-auto justify-content-center align-items-start">
+
+      <!-- Visitor Info Card -->
+      <div class="col-lg-5 mb-4">
+        <div class="card h-100" style="width: 100%; max-width: 30rem; margin: 0 auto;">
+          <h5 class="card-header bg-info text-monospace text-light text-center">
+            <strong>Visitor's Information</strong>
+          </h5>
+
+          <div class="card-body px-lg-5 mt-2">
+            <form id="meetingform" class="text-center" style="color: #757575;" action="/dashboard/save_meeting/"
+              method="POST" enctype="multipart/form-data">
+              {% csrf_token %}
+
+              <div class="form-row">
+                <div class="col">
+                  <div class="md-form">
+                    {{ form.visitor_name }}
+                  </div>
+                </div>
+              </div>
+
+              <div class="md-form my-3">
+                {{ form.visitor_email }}
+              </div>
+
+              <div class="md-form my-3">
+                {{ form.visitor_phone }}
+              </div>
+
+            
+
+              <div class="md-form my-3">
+
+                <select name="host" id="host" class="form-control" required>
+
+                  <option value="" selected disabled>
+                    Select a host
+                  </option>
+
+                  {% for host in hosts %}
+
+                  <option value="{{ host.id }}">
+                    {{ host.host_name }}
+                  </option>
+
+                  {% endfor %}
+
+                </select>
+
+              </div>
+
+              <div class="my-3">
+
+                <label class="text-dark font-weight-bold">
+                  Visitor Photo
+                </label>
+
+                <div class="border rounded p-2">
+
+                  <video id="cameraPreview" autoplay playsinline width="100%" style="
+        max-width: 300px;
+        border-radius: 8px;
+      "></video>
+
+                  <canvas id="photoCanvas" style="display: none;"></canvas>
+
+                  <img id="capturedPhoto" alt="Captured visitor" style="
+        display: none;
+        width: 100%;
+        max-width: 300px;
+        border-radius: 8px;
+      ">
+
+                </div>
+
+                <button type="button" id="captureButton" class="btn btn-outline-info mt-2">
+                  📷 Capture Photo
+                </button>
+
+                <button type="button" id="retakeButton" class="btn btn-outline-secondary mt-2" style="display: none;">
+                  Retake Photo
+                </button>
+
+                <!-- Django receives this as request.FILES['visitor_photo'] -->
+                <input type="file" id="visitorPhotoInput" name="visitor_photo" accept="image/*" style="display: none;">
+
+                <small id="cameraMessage" class="form-text text-muted">
+                  Allow camera access to capture the visitor photo.
+                </small>
+
+              </div>
+
+              <!-- <div class="md-form my-3 text-left">
+                <label for="{{ form.visitor_photo.id_for_label }}" class="text-dark">
+                  Visitor Photo
+                </label>
+
+                {{ form.visitor_photo }} -->
+
+              <small class="form-text text-muted">
+                Upload a clear visitor photo.
+              </small>
+
+              <button class="btn bg-info btn-rounded my-2 waves-effect z-depth-0 text-light" type="submit" style="width: 10rem;">
+                Check In
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- Host Info Card -->
+      <!-- <div class="col-lg-6 mb-4"> -->
+      <!-- <div class="card text-dark h-100" style="width: 100%; max-width: 32rem; margin: 0 auto;">
+          <h5 class="card-header bg-info text-monospace text-light text-center">
+            <strong>Host's Information</strong>
+          </h5>
+          <div class="card-body d-flex flex-column flex-sm-row align-items-center">
+            <img src="/media/{{ host.host_image }}" alt="Host photo"
+              class="rounded mb-3 mb-sm-0 mr-sm-4"
+              style="width: 120px; height: 120px; object-fit: cover; flex-shrink: 0;" />
+            <div class="text-center text-sm-left">
+              <h3 class="card-title mb-1">{{ host.host_name }}</h3>
+              <p class="card-text mb-0">{{ host.host_desc }}</p>
+            </div>
+          </div>
+        </div>
+      </div> -->
+
+    </div>
+  </div>
+</header>
+
+<script>
+  document.addEventListener("DOMContentLoaded", async function () {
+    const video = document.getElementById("cameraPreview");
+    const canvas = document.getElementById("photoCanvas");
+    const capturedPhoto = document.getElementById("capturedPhoto");
+    const captureButton = document.getElementById("captureButton");
+    const retakeButton = document.getElementById("retakeButton");
+    const photoInput = document.getElementById("visitorPhotoInput");
+    const cameraMessage = document.getElementById("cameraMessage");
+    let cameraStream = null;
+
+    // UI fix: mirror the preview so it feels like a natural selfie view
+    video.style.transform = "scaleX(-1)";
+
+    // UI fix: disable capture until camera is actually ready
+    captureButton.disabled = true;
+    cameraMessage.textContent = "Starting camera...";
+
+    try {
+      cameraStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "user" },
+        audio: false,
+      });
+      video.srcObject = cameraStream;
+      cameraMessage.textContent = "Camera is ready. Click Capture Photo.";
+    } catch (error) {
+      console.error("Camera error:", error);
+      cameraMessage.textContent = "Camera access was denied or is unavailable.";
+    }
+
+    // UI fix: only enable the button once the video actually has frames
+    video.addEventListener("loadedmetadata", function () {
+      if (video.videoWidth > 0 && video.videoHeight > 0) {
+        captureButton.disabled = false;
+      }
+    });
+
+    captureButton.addEventListener("click", function () {
+      if (!cameraStream || video.videoWidth === 0 || video.videoHeight === 0) {
+        cameraMessage.textContent = "Camera is not ready yet.";
+        return;
+      }
+
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const context = canvas.getContext("2d");
+
+      // UI fix: un-mirror on capture so the saved photo isn't flipped
+      context.translate(canvas.width, 0);
+      context.scale(-1, 1);
+      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      const imageData = canvas.toDataURL("image/jpeg", 0.9);
+      capturedPhoto.src = imageData;
+      capturedPhoto.style.display = "block";
+      video.style.display = "none";
+      captureButton.style.display = "none";
+      retakeButton.style.display = "inline-block";
+      cameraMessage.textContent = "Photo captured successfully.";
+
+      canvas.toBlob(
+        function (blob) {
+          const photoFile = new File([blob], "visitor_photo.jpg", { type: "image/jpeg" });
+          const dataTransfer = new DataTransfer();
+          dataTransfer.items.add(photoFile);
+          photoInput.files = dataTransfer.files;
+        },
+        "image/jpeg",
+        0.9
+      );
+    });
+
+    retakeButton.addEventListener("click", function () {
+      // UI fix: clear old image first to avoid a flash of stale photo
+      capturedPhoto.src = "";
+      capturedPhoto.style.display = "none";
+      video.style.display = "block";
+      captureButton.style.display = "inline-block";
+      retakeButton.style.display = "none";
+      photoInput.value = "";
+      cameraMessage.textContent = "Camera is ready. Capture again.";
+    });
+
+    // Merged submit handler: photo check -> host check -> confirm
+    const meetingForm = photoInput.closest("form");
+    meetingForm.addEventListener("submit", function (event) {
+      // 1. Require captured photo
+      if (photoInput.files.length === 0) {
+        event.preventDefault();
+        cameraMessage.textContent = "Please capture the visitor photo before checking in.";
+        return;
+      }
+
+      // 2. Require host selection
+      const selectedHost = meetingForm.querySelector('select[name="host"]');
+      if (!selectedHost || !selectedHost.value) {
+        event.preventDefault();
+        alert("Please select a host.");
+        return;
+      }
+
+      // 3. Confirm before submitting
+      const hostName = selectedHost.options[selectedHost.selectedIndex].text;
+      const confirmed = confirm(
+        "Confirm visitor check-in?\n\n" + "Selected Host: " + hostName
+      );
+      if (!confirmed) {
+        event.preventDefault();
+      }
+    });
+  });
+</script>
+{% endblock %}

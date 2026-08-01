@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+<title>Meeting History</title>
+{% endblock %}
+
+{% block nav %} 
+<div class="form-inline my-2 my-lg-0 ml-auto">
+    <h6 class="text-dark mx-3 my-auto">Hello, Admin</h6>
+    <a class="btn btn-primary mx-2" href="{% url 'dashboard' %}" role="button">Dashboard</a>       
+</div>
+{% endblock %}
+
+{% block header %}
+<header class="masthead text-center" style="background: url('{% static 'img/bg-3.png' %}') no-repeat center center fixed; background-size: cover; min-height: 38rem;">
+    <h2 class="text-monospace text-light mx-5 mb-4">Visitor History</h2>
+    <div class="container-fluid text-center">
+        <table class="table table-light table-hover shadow-sm">
+            <thead class="thead-dark">
+                <tr>
+                    <th>Meeting ID</th>
+                    <th>Date</th>
+                    <th>Visitor Name</th>
+                    <th>Contact</th>
+                    <th>Host Name</th>
+                    <th>Check-In</th>
+                    <th>Check-Out</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for m in meetings %}
+                <tr>
+                    <td>{{ m.id }}</td>
+                    <td>{{ m.date|date:"d M Y" }}</td>
+                    <td>{{ m.visitor_name }}</td>
+                    <td>{{ m.visitor_phone }}</td>
+                    <td>{{ m.host }}</td>
+                    <td>{{ m.time_in|time:"h:i A" }}</td>
+                    <td>
+                        {% if m.time_out %}
+                            {{ m.time_out|time:"h:i A" }}
+                        {% else %}
+                            —
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if m.time_out %}
+                            <span class="badge badge-success">CHECKED OUT</span>
+                        {% else %}
+                            <span class="badge badge-warning">CHECKED IN</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if not m.time_out %}
+                            <a href="{% url 'checkout' %}?mid={{ m.id }}" 
+                               class="btn btn-danger btn-sm" 
+                               onclick="return confirm('Are you sure you want to check out {{ m.visitor_name }}?');">
+                                Check Out
+                            </a>
+                        {% else %}
+                            <span class="text-muted small">Completed</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="9" class="text-center py-4 text-muted">
+                        No visitor records found.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</header>
+{% endblock %}
