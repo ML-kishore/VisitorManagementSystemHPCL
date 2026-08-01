@@ -17,7 +17,7 @@
   </div>
 {% endblock %}
 {% block header %}
-<header class="masthead text-white text-center" style="background: linear-gradient(rgba(0,0,0,0.2), rgba(0,0,0,0.2)), url('{% static '/img/bg-3.jpg' %}') center fixed; background-size:100% 100%;">
+<header class="masthead text-white text-center" style="background: linear-gradient(rgba(0,0,0,0.2), rgba(0,0,0,0.2)), url('{% static 'img/bg-3.jpg' %}') center fixed; background-size:100% 100%;">
     {% if messages %}
     {% for msg in messages %}
     <div class="alert alert-{{ msg.tags }} alert-dismissible fade show mx-auto text-lg-left" style="width: 80%;" role="alert">
