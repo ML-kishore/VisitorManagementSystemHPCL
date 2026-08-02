@@ -373,7 +373,10 @@ def email(subject, visitor, rec, host=None):
 
                 msg.attach(image)
 
-        msg.send()
+        try:
+            msg.send()
+        except Exception as e:
+            print("Email sending failed:", e)
 
         print(
             f"Email sent successfully to: {rec}"
