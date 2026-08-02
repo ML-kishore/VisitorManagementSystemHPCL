@@ -131,7 +131,7 @@ def save_meeting(request):
             subject = instance.visitor_name +" Checked In !"
             visitor = instance
             ## EMAIL AND SMS TO HOST
-            email(subject,visitor,rec)
+            #email(subject,visitor,rec)
             # sendsms(subject,visitor,host)
             messages.success(request,'Information sent to Host, You will be called shortly !!')
             return redirect('checkin_success',meeting_id=instance.id)
