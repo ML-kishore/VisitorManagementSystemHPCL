@@ -20,17 +20,28 @@ class Host(models.Model):
         return str(self.id) + " : " + str(self.host_name)
 
 # MEETING MODEL
+
 class Meeting(models.Model):
     id = models.AutoField
     visitor_name = models.CharField(max_length=50)
     visitor_email = models.EmailField(blank=True, null=True)
     visitor_phone = models.IntegerField(max_length=10)
-    visitor_photo = models.ImageField(upload_to="img/visitor_photos/",blank=True,null=True)
+
+    vendor_name = models.CharField(max_length=100, blank=True, default="")
+    aadhaar_number = models.CharField(max_length=12, blank=True, default="")
+    purpose = models.CharField(max_length=255, blank=True, default="")
+
+    visitor_photo = models.ImageField(
+        upload_to="img/visitor_photos/",
+        blank=True,
+        null=True
+    )
+
     host = models.CharField(max_length=50, default="")
     date = models.DateField(default=datetime.datetime.now())
     time_in = models.TimeField(default=datetime.datetime.now())
     time_out = models.TimeField(blank=True, null=True)
-
+    
     def __str__(self):
         return str(self.id)+ ' : ' + str(self.visitor_name)
 
