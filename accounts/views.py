@@ -364,10 +364,9 @@ def download_checkout_pdf(request, meeting_id):
 
     # Format checkout time
     checkout_time = (
-        meeting.time_out.strftime('%d %B %Y, %I:%M %p')
-        if meeting.time_out
-        else 'Not available'
-    )
+    f"{meeting.date.strftime('%d %B %Y')}, {meeting.time_out.strftime('%I:%M %p')}"
+    if meeting.date and meeting.time_out else 'Not available'
+)
 
     # PDF details
     details = [
