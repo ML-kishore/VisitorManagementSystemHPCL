@@ -13,4 +13,8 @@ urlpatterns = [
     path('checkout/', views.checkout, name='checkout'),
     path('checkin-success/<int:meeting_id>/',views.checkin_success,name='checkin_success'),
     path('download-pdf/<int:meeting_id>/',views.download_meeting_pdf,name='download_meeting_pdf'),
+    path(
+    'download-checkout-pdf/<int:meeting_id>/',
+    views.download_checkout_pdf,
+    name='download_checkout_pdf'),
 ]

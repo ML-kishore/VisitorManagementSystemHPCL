@@ -5,15 +5,16 @@
 <title>Meeting History</title>
 {% endblock %}
 
-{% block nav %} 
+{% block nav %}
 <div class="form-inline my-2 my-lg-0 ml-auto">
     <h6 class="text-dark mx-3 my-auto">Hello, Admin</h6>
-    <a class="btn btn-primary mx-2" href="{% url 'dashboard' %}" role="button">Dashboard</a>       
+    <a class="btn btn-primary mx-2" href="{% url 'dashboard' %}" role="button">Dashboard</a>
 </div>
 {% endblock %}
 
 {% block header %}
-<header class="masthead text-center" style="background: url('{% static 'img/bg-3.png' %}') no-repeat center center fixed; background-size: cover; min-height: 38rem;">
+<header class="masthead text-center"
+    style="background: url('{% static 'img/bg-3.png' %}') no-repeat center center fixed; background-size: cover; min-height: 38rem;">
     <h2 class="text-monospace text-light mx-5 mb-4">Visitor History</h2>
     <div class="container-fluid text-center">
         <table class="table table-light table-hover shadow-sm">
@@ -41,27 +42,33 @@
                     <td>{{ m.time_in|time:"h:i A" }}</td>
                     <td>
                         {% if m.time_out %}
-                            {{ m.time_out|time:"h:i A" }}
+                        {{ m.time_out|time:"h:i A" }}
                         {% else %}
-                            —
+                        —
                         {% endif %}
                     </td>
                     <td>
                         {% if m.time_out %}
-                            <span class="badge badge-success">CHECKED OUT</span>
+                        <span class="badge badge-success">CHECKED OUT</span>
                         {% else %}
-                            <span class="badge badge-warning">CHECKED IN</span>
+                        <span class="badge badge-warning">CHECKED IN</span>
                         {% endif %}
                     </td>
                     <td>
                         {% if not m.time_out %}
-                            <a href="{% url 'checkout' %}?mid={{ m.id }}" 
-                               class="btn btn-danger btn-sm" 
-                               onclick="return confirm('Are you sure you want to check out {{ m.visitor_name }}?');">
-                                Check Out
-                            </a>
+                        <a href="{% url 'checkout' %}?mid={{ m.id }}" class="btn btn-danger btn-sm"
+                            onclick="return confirm('Are you sure you want to check out {{ m.visitor_name }}?');">
+                            Check Out
+                        </a>
                         {% else %}
-                            <span class="text-muted small">Completed</span>
+                        <span class="text-muted small mr-2">
+                            Completed
+                        </span>
+
+                        <a href="{% url 'download_checkout_pdf' m.id %}" class="btn btn-primary btn-sm"
+                            title="Download Checkout PDF">
+                            <i class="fa fa-download"></i>
+                        </a>
                         {% endif %}
                     </td>
                 </tr>

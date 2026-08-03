@@ -241,6 +241,14 @@ def download_meeting_pdf(request, meeting_id):
     document.build(elements)
     return response
 
+def mask_aadhaar(aadhaar):
+    aadhaar = str(aadhaar or "")
+
+    if len(aadhaar) >= 4:
+        return f"XXXX XXXX {aadhaar[-4:]}"
+
+    return "XXXX XXXX XXXX"
+
 ## Checkout function when Host clicks checkout button
 def checkout(request):
     if request.method == 'GET':
@@ -256,11 +264,230 @@ def checkout(request):
         host.save()
         meeting.save()
         rec = [meeting.visitor_email]
-        Subject = "HealthPlus Meeting Details"
+        Subject = "HPCL Meeting Details"
         visitor = meeting
         # sending email to visitor
-        email(Subject,visitor,rec,host)
+        #email(Subject,visitor,rec,host)
         return HttpResponse(meeting.visitor_name+', Checked Out Successfully !!')
+    
+@login_required(login_url='/admin_login/')
+def download_checkout_pdf(request, meeting_id):
+    meeting = get_object_or_404(Meeting, id=meeting_id)
+
+    # PDF should be available only after checkout
+    if not meeting.time_out:
+        return HttpResponse(
+            "This visitor has not checked out yet.",
+            status=400
+        )
+
+    # Response setup
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = (
+        f'attachment; filename="visitor_checkout_{meeting.id}.pdf"'
+    )
+
+    # Document layout
+    document = SimpleDocTemplate(
+        response,
+        pagesize=A4,
+        rightMargin=20 * mm,
+        leftMargin=20 * mm,
+        topMargin=18 * mm,
+        bottomMargin=18 * mm
+    )
+
+    # Typography styles
+    styles = getSampleStyleSheet()
+
+    title_style = ParagraphStyle(
+        'HPCLCheckoutTitle',
+        parent=styles['Title'],
+        alignment=TA_CENTER,
+        textColor=colors.HexColor('#0068A5'),
+        fontSize=22,
+        spaceAfter=6
+    )
+
+    subtitle_style = ParagraphStyle(
+        'HPCLCheckoutSubtitle',
+        parent=styles['Normal'],
+        alignment=TA_CENTER,
+        textColor=colors.HexColor('#666666'),
+        fontSize=11,
+        spaceAfter=18
+    )
+
+    heading_style = ParagraphStyle(
+        'CheckoutSectionHeading',
+        parent=styles['Heading2'],
+        textColor=colors.HexColor('#0068A5'),
+        fontSize=15,
+        spaceAfter=10
+    )
+
+    # Build PDF elements
+    elements = [
+        Paragraph('HPCL', title_style),
+        Paragraph('Visitor Check-Out Receipt', subtitle_style)
+    ]
+
+    # Optional visitor photo
+    if meeting.visitor_photo:
+        try:
+            visitor_image = Image(
+                meeting.visitor_photo.path,
+                width=40 * mm,
+                height=40 * mm
+            )
+            visitor_image.hAlign = 'CENTER'
+
+            elements.extend([
+                visitor_image,
+                Spacer(1, 8 * mm)
+            ])
+
+        except Exception as error:
+            print('CHECKOUT PDF IMAGE ERROR:', repr(error))
+
+    elements.append(
+        Paragraph('Visitor Information', heading_style)
+    )
+
+    # Format check-in date and time
+    checkin_time = (
+        f"{meeting.date.strftime('%d %B %Y')}, "
+        f"{meeting.time_in.strftime('%I:%M %p')}"
+        if meeting.date and meeting.time_in
+        else 'Not available'
+    )
+
+    # Format checkout time
+    checkout_time = (
+        meeting.time_out.strftime('%d %B %Y, %I:%M %p')
+        if meeting.time_out
+        else 'Not available'
+    )
+
+    # PDF details
+    details = [
+        ['Visitor Name', meeting.visitor_name],
+        ['Vendor Name', meeting.vendor_name or 'Not provided'],
+        ['Aadhaar Number', mask_aadhaar(meeting.aadhaar_number)],
+        ['Purpose of Visit', meeting.purpose or 'Not provided'],
+        ['Phone Number', str(meeting.visitor_phone)],
+        ['Email Address', meeting.visitor_email or 'Not provided'],
+        ['Host', meeting.host],
+        ['Check-In Time', checkin_time],
+        ['Check-Out Time', checkout_time],
+        ['Status', 'CHECKED OUT'],
+    ]
+
+    # Create table
+    details_table = Table(
+        details,
+        colWidths=[55 * mm, 105 * mm]
+    )
+
+    details_table.setStyle(TableStyle([
+        # Left-side labels
+        (
+            'BACKGROUND',
+            (0, 0),
+            (0, -1),
+            colors.HexColor('#F1F7FA')
+        ),
+        (
+            'TEXTCOLOR',
+            (0, 0),
+            (0, -1),
+            colors.HexColor('#003F66')
+        ),
+        (
+            'FONTNAME',
+            (0, 0),
+            (0, -1),
+            'Helvetica-Bold'
+        ),
+
+        # Table borders
+        (
+            'GRID',
+            (0, 0),
+            (-1, -1),
+            0.7,
+            colors.HexColor('#D7E0E5')
+        ),
+
+        (
+            'VALIGN',
+            (0, 0),
+            (-1, -1),
+            'MIDDLE'
+        ),
+
+        (
+            'LEFTPADDING',
+            (0, 0),
+            (-1, -1),
+            12
+        ),
+
+        (
+            'RIGHTPADDING',
+            (0, 0),
+            (-1, -1),
+            12
+        ),
+
+        (
+            'TOPPADDING',
+            (0, 0),
+            (-1, -1),
+            11
+        ),
+
+        (
+            'BOTTOMPADDING',
+            (0, 0),
+            (-1, -1),
+            11
+        ),
+
+        # Highlight checkout status row
+        (
+            'BACKGROUND',
+            (1, 9),
+            (1, 9),
+            colors.HexColor('#E8F5E9')
+        ),
+        (
+            'TEXTCOLOR',
+            (1, 9),
+            (1, 9),
+            colors.HexColor('#1A8C0B')
+        ),
+        (
+            'FONTNAME',
+            (1, 9),
+            (1, 9),
+            'Helvetica-Bold'
+        ),
+    ]))
+
+    # Final PDF content
+    elements.extend([
+        details_table,
+        Spacer(1, 15 * mm),
+        Paragraph(
+            'This document confirms that the visitor successfully checked out from HPCL.',
+            subtitle_style
+        )
+    ])
+
+    document.build(elements)
+
+    return response
 
 # profile manager that saves host profile
 @login_required(login_url='/admin_login/')
